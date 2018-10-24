@@ -30,7 +30,7 @@ public class Menu extends JMenuBar{
         jMenuBar.add(fileMenu);
         jMenuBar.add(new JMenu("Edit"));
         jMenuBar.add(new JMenu("Config"));
-        jMenuBar.add(new JMenu("Abouy"));
+        jMenuBar.add(new JMenu("Help"));
         jMenuBar.add(runMenu);
         jMenuBar.add(cleanMenu);
 
@@ -46,19 +46,17 @@ public class Menu extends JMenuBar{
         fileMenu.add(closefileMenu);
         fileMenu.addSeparator();  // 分割线
         fileMenu.add(exitfileMenu);
+        /*创建Run下的子菜单*/
+        JMenuItem runButtonItem = new JMenuItem("Run");
+        JMenuItem stopButtonItem = new JMenuItem("Stop");
 
-        /*单选子按钮，需要加到按钮组中*/
-        //ButtonGroup buttonGroup = new ButtonGroup();
+        runMenu.add(runButtonItem);
+        runMenu.add(stopButtonItem);
 
-        /*监听事件*/
-        newfileMenu.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("new button has been clicked");
-            }
-        });
 
-        runMenu.addActionListener(new ActionListener() {
+
+
+        runButtonItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("run");
