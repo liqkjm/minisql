@@ -1,8 +1,8 @@
 package com.liqkjm.minisql.util;
 
+import com.liqkjm.minisql.server.interpreter.Interpreter;
+
 import javax.swing.*;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -21,17 +21,22 @@ public class ClientAbsoluteLayout extends JFrame implements ActionListener{
     private JPanel jPanel;  // 中间容器
     private JMenuBar jMenuBar; // 菜单栏
     private JScrollPane treeScrollPane; // 左侧列表栏
-    private JScrollPane inputScrollPane; // 输入文本区
-    private JScrollPane outputScrollPane; // 输出文本区
     private JTextArea inputArea;
+    private JScrollPane inputScrollPane; // 输入文本区
     private JTextArea outputArea;
+    private JScrollPane outputScrollPane; // 输出文本区
 
+    /*按钮组*/
     private JMenuItem runButtonItem;
-
+    private JButton runButton ;
+    private JButton cleanButton;
+    /*翻译器*/
+    private Interpreter interpreter = new Interpreter();
+    // private Interpreter interpreter = MinisqlApplication.interpreter;
 
     public ClientAbsoluteLayout() {
         jFrame = new JFrame("绝对布局窗口");
-        jFrame.setSize(570,460);
+        jFrame.setSize(615,460);
         jFrame.setLocationRelativeTo(null);
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -80,19 +85,27 @@ public class ClientAbsoluteLayout extends JFrame implements ActionListener{
 
         /*模块一：树形结构*/
         // 创建根节点
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("中国");
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("data");
 
-        // 创建二级节点
-        DefaultMutableTreeNode gdNode = new DefaultMutableTreeNode("广东");
-        DefaultMutableTreeNode fjNode = new DefaultMutableTreeNode("福建");
-        DefaultMutableTreeNode shNode = new DefaultMutableTreeNode("上海");
-        DefaultMutableTreeNode twNode = new DefaultMutableTreeNode("台湾");
-
-        // 把二级节点作为子节点添加到根节点
-        rootNode.add(gdNode);
-        rootNode.add(fjNode);
-        rootNode.add(shNode);
-        rootNode.add(twNode);
+        // 动态创建二级节点
+        /**
+         * TODO: 获取文件列表，并在变化时，更新列表
+         */
+        String[] databases = {"database1", "database2","testDatabase"};
+        int databaseLength = databases.length;
+        DefaultMutableTreeNode[] databaseNode = new DefaultMutableTreeNode[databaseLength];
+        for(int i = 0; i < databaseLength; i++){
+            databaseNode[i] = new DefaultMutableTreeNode(databases[i]);
+            rootNode.add(databaseNode[i]);
+            /*动态创建三级节点*/
+            String[] tables = {"table1", "table2","table3"};
+            int tableLength = tables.length;
+            DefaultMutableTreeNode[] tableNode = new DefaultMutableTreeNode[tableLength];
+            for(int j = 0; j < tableLength; j++) {
+                tableNode[j] = new DefaultMutableTreeNode(tables[i]);
+                databaseNode[i].add(tableNode[j]);
+            }
+        }
 
         JTree tree = new JTree(rootNode);
 
@@ -115,17 +128,45 @@ public class ClientAbsoluteLayout extends JFrame implements ActionListener{
 
         /*模块二：输入文本区*/
         // 创建文本区域组件
-        inputArea = new JTextArea("傻逼队友，我有点崩溃....");
+
+        inputArea = new JTextArea("slect * from student where sno = 1 ;\n" +
+                "create database test;\n" +
+                "show databases;");
         inputArea.setLineWrap(true);                         // 自动换行
-        inputArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
+        inputArea.setFont(new Font(null, Font.PLAIN, 16));   // 设置字体
 
         inputScrollPane = new JScrollPane(
                 inputArea,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
         );
+
+        runButton = new JButton("RUN");
+        cleanButton = new JButton("CLEAN");
+
+        /**
+         * TODO：获取输入命令，并调用服务端接口，得到对应数据，并输出
+         */
+        runButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String inputMessage = inputArea.getText();
+                System.out.println("run绑定事件 \n" + inputMessage);
+                String outputMessage = interpreter.getResult(inputMessage);
+                outputArea.setText(outputMessage);
+            }
+        });
+
+        cleanButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("clean");
+                inputArea.setText("");
+            }
+        });
+
         /*模块三：输出文本区*/
-        outputArea = new JTextArea();
+        outputArea = new JTextArea("Welcome MiniSQL~  HELP YOURSELF");
         outputArea.setLineWrap(true);                         // 自动换行
         outputArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
 
@@ -141,16 +182,23 @@ public class ClientAbsoluteLayout extends JFrame implements ActionListener{
         jPanel = new JPanel(null);
 
         treeScrollPane.setLocation(0,0);
-        treeScrollPane.setSize(150,500);
+        treeScrollPane.setSize(150,400);
 
         inputScrollPane.setLocation(150,0);
-        inputScrollPane.setSize(400,150);
+        inputScrollPane.setSize(350,150);
+
+        runButton.setLocation(500,0);
+        runButton.setSize(100,75);
+        cleanButton.setLocation(500,75);
+        cleanButton.setSize(100,75);
 
         outputScrollPane.setLocation(150,150);
-        outputScrollPane.setSize(400,350);
+        outputScrollPane.setSize(450,250);
 
         jPanel.add(treeScrollPane);
         jPanel.add(inputScrollPane);
+        jPanel.add(runButton);
+        jPanel.add(cleanButton);
         jPanel.add(outputScrollPane);
 
         jFrame.setContentPane(jPanel);
@@ -162,12 +210,19 @@ public class ClientAbsoluteLayout extends JFrame implements ActionListener{
     public void actionPerformed(ActionEvent e) {
         System.out.println("inputArea" + inputArea.getText());
 
-        if(e.getSource() == runButtonItem) {
-            System.out.println("监听事件");
+        if(e.getSource() == runButton) {
+            System.out.println("全局监听函数输出");
             outputArea.setText(inputArea.getText());
         }
     }
     public static void main(String[] args) {
-        new ClientAbsoluteLayout();
+        ClientAbsoluteLayout client = new ClientAbsoluteLayout();
+        client.runButtonItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                System.out.println("input"+client.inputArea);
+            }
+        });
     }
 }
