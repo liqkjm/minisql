@@ -1,4 +1,4 @@
-package com.liqkjm.minisql.server.buffer;
+package com.liqkjm.minisql.server.buffermanager;
 
 /**
  * @Describe TODO

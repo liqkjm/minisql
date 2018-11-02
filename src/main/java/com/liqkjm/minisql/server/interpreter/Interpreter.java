@@ -49,27 +49,43 @@ public class Interpreter {
     }
 
     /**
-     * 对外接口，传过来的值，可能包含多条命令
+     * 对外接口，传过来的值，可能包含多条命令，需要分割每条命令，并判断每条命令的有效性。
      * 分别检查每条命令的有效性，并执行对应操作
      * @param querys
      * @return
      */
     public String getResult(String querys) {
-        String[] querylist = querys.split(";");
-        // query = clean(query);
-        if(query.equals("test")) {
-            return "测试从后端获取数据";
-        }else{
-            int numOfQuery = querylist.length;
-            String result = "";
-            for(int i = 0; i < numOfQuery; i++) {
 
-                result += sqlParser(clean(querylist[i]));
+        /**
+         * 两条命令中间可能存在多个无效字符，需要清除
+         */
+        char[] querysArray = querys.toCharArray();
+        int flag = 0;
+        String result = "";
+        for(int i = 0; i < querysArray.length - 1; i++) {
+
+            if (querysArray[i] == ';' && querysArray[i + 1] != ';') {
+                String currentQuery = querys.substring(flag, i + 1);
+                result += sqlParser(clean(currentQuery));
+                flag = i + 1;
+            }else if((i == (querysArray.length - 1)) && (querysArray[i] == ';')) {
 
             }
-            return numOfQuery + " 条命令执行结果：\n" + result;
-            //return sqlParser(query);
         }
+        /**
+         * 判断最后一条命令是不是以分号结束？
+         * 限定最后一个字符只能是分号，不能是回车等等其他的字符
+         * 如果最后的命令有分号，那么querysArray[len - 1] = ";"
+         */
+        if(querysArray[querysArray.length - 1] != ';') {
+            result += "命令必须以分号结束";
+        }else {
+            result += sqlParser(clean(querys.substring(flag, querysArray.length - 1)));
+        }
+
+        return result;
+
+
         // return "无效命令，请检查重试";
     }
 
@@ -80,6 +96,9 @@ public class Interpreter {
      */
     public static String clean(String s)
     {
+        if(s == null || s.length() < 2) {
+            return "";
+        }
         char[] c = s.toCharArray();
         //清除命令前的空格 回车符 tab符 以及换行符
         if(c[0] == ' ' | c[0] == '\r' | c[0] == '\n' | c[0] == '\t')
